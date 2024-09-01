@@ -1,0 +1,8 @@
+build/
+
+# --- Secrets ---
+.env
+*.env
+
+# --- CI release bundle (ci/package.py) ---
+dist/
