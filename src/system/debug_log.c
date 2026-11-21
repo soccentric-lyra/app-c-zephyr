@@ -67,7 +67,7 @@ static void debug_log_format(const struct log_output *output,
 		line.len = (n > 0) ? MIN((size_t)n, LINE_MAX - 3U) : 0U;
 	}
 
-	size_t len;
+	size_t len = 0U;
 	uint8_t *package = log_msg_get_package(msg, &len);
 
 	if (len > 0U) {

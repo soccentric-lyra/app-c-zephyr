@@ -34,8 +34,10 @@ typedef struct flatcc_block {
  * @brief Arena storage, aligned to FLATCC_ALIGNMENT.
  */
 typedef union {
-	long double align;                         /**< Alignment only. */
-	void *pointer;                             /**< Alignment only. */
+	/* cppcheck-suppress unusedStructMember ; alignment only */
+	long double align;
+	/* cppcheck-suppress unusedStructMember ; alignment only */
+	void *pointer;
 	unsigned char bytes[APP_FLATCC_HEAP_SIZE]; /**< Arena bytes. */
 } __attribute__((aligned(FLATCC_ALIGNMENT))) flatcc_arena_t;
 
@@ -156,8 +158,8 @@ void *app_flatcc_realloc(void *ptr, size_t size)
 		return NULL;
 	}
 
-	flatcc_block_t *block = (flatcc_block_t *)((unsigned char *)ptr -
-						   sizeof(flatcc_block_t));
+	const flatcc_block_t *block = (const flatcc_block_t *)(
+		(unsigned char *)ptr - sizeof(flatcc_block_t));
 	if (block->size >= flatcc_align(size)) {
 		return ptr;
 	}

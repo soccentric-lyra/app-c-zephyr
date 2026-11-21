@@ -1,0 +1,45 @@
+#
+# .clang-tidy - static analysis configuration for the Zephyr demo application
+#               (ZDNFR-004)
+#
+# Only the project's own code (src/app, src/board, src/boot, src/comms and
+# src/system) is reported on; the Zephyr, CMSIS and flatcc headers are still
+# parsed but never flagged.  Generated flatcc output and the vendored runtime
+# are not linted.
+#
+# K_THREAD_DEFINE and the devicetree macros are expanded by the compiler.
+# misc-misplaced-const, bugprone-branch-clone and
+# cppcoreguidelines-interfaces-global-init only see that expansion, never a
+# defect in this code, so they are disabled.
+#
+# Run with:  make lint         (report findings)
+#            make lint-strict  (fail on any finding)
+#
+
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-use-nullptr,
+  performance-*,
+  portability-*,
+  -bugprone-reserved-identifier,
+  -clang-diagnostic-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-macro-to-enum,
+  -misc-header-include-cycle,
+  -misc-include-cleaner,
+  -performance-no-int-to-ptr,
+  -cppcoreguidelines-pro-type-member-init,
+  -misc-no-recursion,
+  -performance-weak-try-catch,
+  -misc-misplaced-const,
+  -bugprone-branch-clone,
+  -cppcoreguidelines-interfaces-global-init
+
+# Restrict findings to the project's own sources and headers.
+HeaderFilterRegex: '(^|/)(src/(app|board|boot|comms|system)/[^/]+)\.[chs]$'
+FormatStyle: none

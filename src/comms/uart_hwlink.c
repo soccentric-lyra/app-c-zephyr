@@ -18,6 +18,7 @@
 #include <zephyr/sys/ring_buffer.h>
 
 #include "app/zdemo.h"
+#include "comms/comms.h"
 #include "comms/hwlink.h"
 #include "comms/uart_hwlink.h"
 
@@ -77,6 +78,8 @@ static void uart_isr(const struct device *dev, void *user_data)
 {
 	ARG_UNUSED(user_data);
 
+	bool received = false;
+
 	(void)uart_irq_update(dev);
 
 	uart_clear_errors();
@@ -89,6 +92,11 @@ static void uart_isr(const struct device *dev, void *user_data)
 			break;
 		}
 		(void)ring_buf_put(&uart_rx_ring, chunk, (uint32_t)got);
+		received = true;
+	}
+
+	if (received) {
+		comms_post_rx_from_isr();
 	}
 
 	if (uart_irq_tx_ready(dev)) {

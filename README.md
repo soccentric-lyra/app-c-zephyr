@@ -102,6 +102,8 @@ Headers are included with a module prefix, for example
 ```bash
 scripts/docker-dev.sh build   # build the stm32-dev-zephyr container image once
 scripts/build.sh              # build inside the container
+make lint                     # clang-tidy static analysis
+make lint-strict              # clang-tidy, failing on any finding
 make flash                    # upload build/zephyr-app.img through the bootloader
 make help                     # list all targets
 ```

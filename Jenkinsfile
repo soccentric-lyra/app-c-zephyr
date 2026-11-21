@@ -1,7 +1,7 @@
 // Jenkinsfile - multi-stage CI for the Zephyr RTOS demo application.
 //
-//   Checkout -> Toolchain -> Build -> Boot contract -> Image -> Package
-//   -> Release (tags) -> Archive
+//   Checkout -> Toolchain -> Build -> Static analysis -> Boot contract
+//   -> Image -> Package -> Release (tags) -> Archive
 //
 // Package builds dist/<repo>-<version>.tar.gz (outputs, manifest.json,
 // SHA256SUMS) on every run.  Release runs only for a tag v<version> and
@@ -63,6 +63,12 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'make build'
+            }
+        }
+
+        stage('Static analysis') {
+            steps {
+                sh 'make lint-strict'
             }
         }
 
@@ -194,7 +200,7 @@ PY
             deleteDir()
         }
         success {
-            echo 'Zephyr application: build, boot-contract and image checks passed.'
+            echo 'Zephyr application: build, lint, boot-contract and image checks passed.'
         }
         failure {
             echo 'Zephyr application: pipeline failed - see the stage logs above.'

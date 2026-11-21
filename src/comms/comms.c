@@ -215,7 +215,7 @@ static bool send_body(hwlink_Body_union_ref_t body, uint16_t seq,
 	}
 
 	size_t size = 0U;
-	void *direct = flatcc_builder_get_direct_buffer(&builder, &size);
+	const void *direct = flatcc_builder_get_direct_buffer(&builder, &size);
 
 	if (direct == NULL || size == 0U || size > sizeof(rx_payload)) {
 		flatcc_builder_reset(&builder);

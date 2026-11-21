@@ -195,3 +195,57 @@ add_custom_target(zephyr_app_outputs ALL
         "${CMAKE_BINARY_DIR}/zephyr-app.map"
         "${CMAKE_BINARY_DIR}/zephyr-app.img"
     COMMENT "Copying zephyr-app.* and generating the BOOT image file")
+
+# --- Static analysis (ZDNFR-004) ---------------------------------------------
+# clang-tidy reuses the compile flags this very configure step produced, so
+# it must run from a configured build tree:  make lint / make lint-strict.
+# The tool is optional: a normal firmware build must still configure on a host
+# that has no clang-tidy, and only the lint target then reports the missing
+# dependency.
+find_program(CLANG_TIDY clang-tidy)
+option(APP_LINT_STRICT "Treat any clang-tidy finding as an error (lint-strict)" OFF)
+if(APP_LINT_STRICT)
+    set(APP_LINT_FLAGS --warnings-as-errors=*)
+else()
+    set(APP_LINT_FLAGS)
+endif()
+
+# Hand-written sources only; generated headers and the vendored flatcc runtime
+# are not linted.
+set(APP_LINT_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/board/button.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/board/led.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/boot/flash_confirm.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/boot/handover.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/boot/identity.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/comms/comms.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/comms/flatcc_port.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/comms/hwlink.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/comms/uart_hwlink.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/debug_log.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/fatal.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/health.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/iwdg.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/system/reset_cause.c")
+
+if(CLANG_TIDY)
+    add_custom_target(clang-tidy
+        COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/scripts/clang_tidy.py"
+                --build-dir "${CMAKE_BINARY_DIR}"
+                --clang-tidy "${CLANG_TIDY}"
+                --config "${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy"
+                ${APP_LINT_FLAGS}
+                ${APP_LINT_SOURCES}
+        COMMENT "Running clang-tidy over the project sources"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        VERBATIM)
+else()
+    add_custom_target(clang-tidy
+        COMMAND ${CMAKE_COMMAND} -E echo
+                "clang-tidy not found; install it to run make lint"
+        COMMAND ${CMAKE_COMMAND} -E false
+        COMMENT "clang-tidy is not available"
+        VERBATIM)
+endif()

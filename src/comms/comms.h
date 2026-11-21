@@ -21,6 +21,12 @@
 bool comms_rx_running(void);
 
 /**
+ * @brief Wake the Comms thread when the USART3 RX ring has data.
+ * @note ISR-safe; drops the notification when the queue is full.
+ */
+void comms_post_rx_from_isr(void);
+
+/**
  * @brief Queue a button event to the Comms thread without blocking.
  * @details Comms updates its LED mirror and, after a Hello, sends a
  *          ButtonEvent.  Dropped when the queue is full.

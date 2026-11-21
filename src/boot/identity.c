@@ -106,16 +106,15 @@ static void copy_text(char *out, size_t cap, const uint8_t *data, uint8_t length
 static bool parse_from(uint32_t address)
 {
 	uint8_t raw[ID_HEADER_SIZE];
-	const uint32_t *words = (const uint32_t *)address;
 
 	SCB_InvalidateDCache_by_Addr((uint32_t *)address, ID_MAX_TLV);
 	memcpy(raw, (const void *)address, sizeof(raw));
-	if (words[0] != ID_MAGIC) {
-		return false;
-	}
 
 	id_header_t header;
 	memcpy(&header, raw, sizeof(header));
+	if (header.magic != ID_MAGIC) {
+		return false;
+	}
 	if (header.format != ID_FORMAT || header.length == 0U ||
 	    header.length > ID_MAX_TLV || header.length < 2U) {
 		return false;
@@ -126,7 +125,7 @@ static bool parse_from(uint32_t address)
 
 	/* UID binding: the record has the three UID words in flash byte order. */
 	uint8_t uid[12];
-	uint32_t uid_words[3] = {
+	const uint32_t uid_words[3] = {
 		*(const volatile uint32_t *)UID_BASE,
 		*(const volatile uint32_t *)(UID_BASE + 4U),
 		*(const volatile uint32_t *)(UID_BASE + 8U),

@@ -12,6 +12,8 @@
 #   make build          cmake + ninja, then .elf/.bin/.hex in build/
 #   make clean          remove build/
 #   make rebuild        clean, then build
+#   make lint           clang-tidy static analysis
+#   make lint-strict    clang-tidy, failing on any finding
 #   make menuconfig     Zephyr Kconfig menu (interactive)
 #   make flash          build, then upload build/zephyr-app.img through BOOT
 #   make erase-all      erase the whole flash (asks for confirmation)
@@ -69,8 +71,8 @@ PYTHON   ?= $(if $(filter Windows_NT,$(OS)),python,python3)
 
 .DEFAULT_GOAL := help
 
-.PHONY: all build clean rebuild menuconfig flash erase-all reset debug \
-        gdbserver serial probe size image help
+.PHONY: all build clean rebuild lint lint-strict menuconfig flash erase-all \
+        reset debug gdbserver serial probe size image help
 
 all: build
 
@@ -82,6 +84,19 @@ clean:
 
 rebuild: clean
 	@"$(MAKE)" --no-print-directory build
+
+# clang-tidy needs the compile commands from a configured build tree.  Set the
+# strict flag explicitly so a previous `make lint-strict` does not leak into a
+# later, non-strict run.
+lint: build
+	$(DEV) run cmake -S /work -B /work/build -G Ninja \
+		-DUSER_CACHE_DIR=/work/build/.zephyr-cache -DAPP_LINT_STRICT=OFF
+	$(DEV) run cmake --build /work/build --target clang-tidy
+
+lint-strict: build
+	$(DEV) run cmake -S /work -B /work/build -G Ninja \
+		-DUSER_CACHE_DIR=/work/build/.zephyr-cache -DAPP_LINT_STRICT=ON
+	$(DEV) run cmake --build /work/build --target clang-tidy
 
 menuconfig: build
 	$(DEV) run cmake --build /work/build --target menuconfig
