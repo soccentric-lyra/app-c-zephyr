@@ -18,4 +18,6 @@ target_include_directories(app PRIVATE
 
 target_sources(app PRIVATE
     src/test_hwlink.c
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../src/comms/hwlink.c")
+    src/test_led_pattern.c
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../src/comms/hwlink.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../src/board/led_pattern.c")

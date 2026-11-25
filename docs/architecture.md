@@ -36,6 +36,9 @@ dynamic thread creation and no application heap.
 | Button | 4 | 1024 B | GPIO interrupt / 10 ms poll | B1 debounce, short and long press classification |
 | LED | 5 | 1024 B | `k_timer` / message queue | LD1/LD2/LD3 patterns and the LD3 health/fault display |
 
+The pattern maths lives in `src/board/led_pattern.c`, away from the Zephyr
+GPIO and queue code, so it also runs in the `ztest` suite on `native_sim`.
+
 The Health thread is the only watchdog feeder and the only writer of the
 `CONFIRMED` record. The LED thread is the only writer of the three LED pins.
 The other threads check in with Health; a check-in older than 2 s fails the
@@ -163,11 +166,13 @@ build that must be reproducible from the repository.
 
 ## Tests
 
-`tests/hwlink/` is a Zephyr `ztest` suite that links the real
-`src/comms/hwlink.c`. It covers the CRC check value, the COBS examples, the
-253/254/255-byte block boundaries and the rejection paths (bad CRC, reserved
-flags, embedded zero, truncated block). `make test` builds it for `native_sim`
-and runs the resulting host executable, so it needs no board and no emulator.
+`tests/hwlink/` is a Zephyr `ztest` application that links the real
+`src/comms/hwlink.c` and `src/board/led_pattern.c`. It covers the CRC check
+value, the COBS examples, the 253/254/255-byte block boundaries, the rejection
+paths (bad CRC, reserved flags, embedded zero, truncated block), and the LED
+segment tables, CHASE pairing, phase boundaries and the 32-bit tick wrap.
+`make test` builds it for `native_sim` and runs the resulting host executable,
+so it needs no board and no emulator.
 
 ## Where to look
 

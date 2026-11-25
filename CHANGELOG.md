@@ -11,8 +11,11 @@ and this project adheres to
 ### Added
 
 - Kconfig options for the application log level and the IWDG timeout
-- `ztest` suite for the HWLINK framing layer on Zephyr's `native_sim` board
+- `ztest` suites for the HWLINK framing layer and the LED pattern engine on
+  Zephyr's `native_sim` board
 - `make test` and `scripts/test-ztest.sh`
+- Pure `src/board/led_pattern.c` so the pattern maths is shared by the
+  firmware and the `ztest` suite
 - `docs/architecture.md`: thread model, devicetree overlay, flash map,
   boot hand-over and a side-by-side comparison with the FreeRTOS version
 - GitHub Actions workflow for build, strict lint, footprint and tests

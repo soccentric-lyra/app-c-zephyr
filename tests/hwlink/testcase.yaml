@@ -1,7 +1,8 @@
 tests:
-  app.hwlink:
+  app.unit:
     platform_allow:
       - native_sim
     tags:
       - hwlink
+      - led-pattern
       - unit
