@@ -107,7 +107,7 @@ scripts/docker-dev.sh build   # build the stm32-dev-zephyr container image once
 scripts/build.sh              # build inside the container
 make lint                     # clang-tidy static analysis
 make lint-strict              # clang-tidy, failing on any finding
-make test                     # ztest HWLINK suite on native_sim
+make test                     # ztest HWLINK and LED pattern suites on native_sim
 make flash                    # upload build/zephyr-app.img through the bootloader
 make help                     # list all targets
 ```
