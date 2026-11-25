@@ -103,6 +103,7 @@ target_sources(app PRIVATE
     # Board-level I/O
     src/board/button.c
     src/board/led.c
+    src/board/led_pattern.c
 
     # Bootloader contract and metadata
     src/boot/flash_confirm.c
@@ -216,6 +217,7 @@ set(APP_LINT_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/board/button.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/board/led.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/board/led_pattern.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/boot/flash_confirm.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/boot/handover.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/boot/identity.c"

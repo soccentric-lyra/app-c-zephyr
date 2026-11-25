@@ -19,6 +19,7 @@
 #include "app/task_report.h"
 #include "app/zdemo_threads.h"
 #include "board/led.h"
+#include "board/led_pattern.h"
 #include "comms/comms.h"
 #include "system/health.h"
 
@@ -28,7 +29,6 @@ LOG_MODULE_DECLARE(app);
 #define LED_CHECKIN_MS   500U /**< Health check-in interval, ms. */
 
 #define LED_ERROR_FAST_PERIOD 100U          /**< LD3 health-failed blink period, ms. */
-#define NO_TRANSITION         0xFFFFFFFFUL  /**< No further level change. */
 
 /**
  * @brief LED message types.
@@ -55,14 +55,6 @@ typedef struct {
 	bool force;      /**< Allow LD3 (SET). */
 } led_msg_t;
 
-/**
- * @brief Pattern state of one LED.
- */
-typedef struct {
-	uint8_t pattern; /**< APP_PATTERN_*. */
-	uint16_t period; /**< Period, ms. */
-	uint32_t start;  /**< Uptime of pattern phase 0, ms. */
-} led_cfg_t;
 
 /** Producers -> LED thread queue. */
 K_MSGQ_DEFINE(led_msgq, sizeof(led_msg_t), LED_QUEUE_LENGTH, 4);
@@ -74,16 +66,6 @@ static const struct gpio_dt_spec led2 = GPIO_DT_SPEC_GET(DT_ALIAS(led1), gpios);
 /** LD3 (red), alias led2. */
 static const struct gpio_dt_spec led3 = GPIO_DT_SPEC_GET(DT_ALIAS(led2), gpios);
 
-/**
- * @brief Return the next pattern id, wrapping at APP_PATTERN_COUNT.
- *
- * @param[in] current Current APP_PATTERN_*.
- * @return Next APP_PATTERN_*.
- */
-static uint32_t next_pattern(uint32_t current)
-{
-	return (current + 1U) % APP_PATTERN_COUNT;
-}
 
 /**
  * @brief Drive one LED; no-op if its GPIO is not ready.
@@ -98,180 +80,7 @@ static void led_write(const struct gpio_dt_spec *led, bool on)
 	}
 }
 
-/**
- * @brief Expand a pattern into on/off segments covering one cycle.
- * @details OFF yields no segments; ON yields one 0xFFFF ms segment.  Unknown
- *          patterns fall back to SOS.
- *
- * @param[in]  cfg        Pattern state.
- * @param[in]  second_led true for LD2 of a CHASE pair.
- * @param[out] dur        Segment durations, ms (20 entries).
- * @param[out] on         Segment levels (20 entries).
- * @return Number of segments, 0..18.
- */
-static uint32_t segments_for(const led_cfg_t *cfg, bool second_led,
-			     uint16_t dur[20], bool on[20])
-{
-	uint32_t n = 0U;
-	uint32_t period = cfg->period;
 
-	switch (cfg->pattern) {
-	case APP_PATTERN_OFF:
-		break;
-
-	case APP_PATTERN_ON:
-		dur[n] = 0xFFFFU;
-		on[n] = true;
-		n++;
-		break;
-
-	case APP_PATTERN_BLINK:
-		dur[n] = (uint16_t)(period / 2U);
-		on[n] = true;
-		n++;
-		dur[n] = (uint16_t)(period - (period / 2U));
-		on[n] = false;
-		n++;
-		break;
-
-	case APP_PATTERN_FAST: {
-		uint32_t fast = period / 5U;
-
-		if (fast < 2U) {
-			fast = 2U;
-		}
-		dur[n] = (uint16_t)(fast / 2U);
-		on[n] = true;
-		n++;
-		dur[n] = (uint16_t)(fast - (fast / 2U));
-		on[n] = false;
-		n++;
-		break;
-	}
-
-	case APP_PATTERN_HEARTBEAT: {
-		uint32_t cycle = period < 250U ? 250U : period;
-
-		dur[n] = 50U;
-		on[n] = true;
-		n++;
-		dur[n] = 150U;
-		on[n] = false;
-		n++;
-		dur[n] = 50U;
-		on[n] = true;
-		n++;
-		if (cycle > 250U) {
-			dur[n] = (uint16_t)(cycle - 250U);
-			on[n] = false;
-			n++;
-		}
-		break;
-	}
-
-	case APP_PATTERN_CHASE: {
-		uint32_t half = period / 2U;
-
-		if (second_led) {
-			dur[n] = (uint16_t)half;
-			on[n] = false;
-			n++;
-			dur[n] = (uint16_t)(period - half);
-			on[n] = true;
-		} else {
-			dur[n] = (uint16_t)half;
-			on[n] = true;
-			n++;
-			dur[n] = (uint16_t)(period - half);
-			on[n] = false;
-		}
-		n++;
-		break;
-	}
-
-	case APP_PATTERN_MORSE_SOS:
-	default:
-		/* ... --- ... with a 100 ms unit. */
-		dur[n] = 100U; on[n] = true;  n++;
-		dur[n] = 100U; on[n] = false; n++;
-		dur[n] = 100U; on[n] = true;  n++;
-		dur[n] = 100U; on[n] = false; n++;
-		dur[n] = 100U; on[n] = true;  n++;
-		dur[n] = 300U; on[n] = false; n++;
-		dur[n] = 300U; on[n] = true;  n++;
-		dur[n] = 100U; on[n] = false; n++;
-		dur[n] = 300U; on[n] = true;  n++;
-		dur[n] = 100U; on[n] = false; n++;
-		dur[n] = 300U; on[n] = true;  n++;
-		dur[n] = 300U; on[n] = false; n++;
-		dur[n] = 100U; on[n] = true;  n++;
-		dur[n] = 100U; on[n] = false; n++;
-		dur[n] = 100U; on[n] = true;  n++;
-		dur[n] = 100U; on[n] = false; n++;
-		dur[n] = 100U; on[n] = true;  n++;
-		dur[n] = 700U; on[n] = false; n++;
-		break;
-	}
-
-	return n;
-}
-
-/**
- * @brief Compute an LED's level and the time to its next change.
- *
- * @param[in]  cfg        Pattern state.
- * @param[in]  second_led true for LD2 of a CHASE pair.
- * @param[in]  now        Uptime, ms.
- * @param[out] level      Output level.
- * @param[out] next_ms    Time to the next change, ms, or NO_TRANSITION.
- */
-static void evaluate(const led_cfg_t *cfg, bool second_led, uint32_t now,
-		     bool *level, uint32_t *next_ms)
-{
-	uint16_t dur[20];
-	bool on[20];
-
-	if (cfg->pattern == APP_PATTERN_OFF) {
-		*level = false;
-		*next_ms = NO_TRANSITION;
-		return;
-	}
-	if (cfg->pattern == APP_PATTERN_ON) {
-		*level = true;
-		*next_ms = NO_TRANSITION;
-		return;
-	}
-
-	uint32_t count = segments_for(cfg, second_led, dur, on);
-	uint32_t cycle = 0U;
-
-	for (uint32_t i = 0U; i < count; i++) {
-		cycle += dur[i];
-	}
-	if (cycle == 0U) {
-		*level = false;
-		*next_ms = NO_TRANSITION;
-		return;
-	}
-
-	uint32_t pos = (now - cfg->start) % cycle;
-	uint32_t acc = 0U;
-
-	for (uint32_t i = 0U; i < count; i++) {
-		if (dur[i] == 0U) {
-			continue;
-		}
-		if (pos < (acc + dur[i])) {
-			*level = on[i];
-			*next_ms = (acc + dur[i]) - pos;
-			return;
-		}
-		acc += dur[i];
-	}
-
-	*level = false;
-	*next_ms = cycle - pos;
-}
 
 /**
  * @brief Set one LED's pattern, keeping the CHASE pair consistent.
@@ -371,7 +180,7 @@ static void handle_message(led_cfg_t cfg[3], const led_msg_t *msg,
 			    period > APP_LED_MAX_PERIOD) {
 				period = APP_LED_DEFAULT_PERIOD;
 			}
-			uint8_t pattern = (uint8_t)next_pattern(cfg[0].pattern);
+			uint8_t pattern = (uint8_t)led_pattern_next(cfg[0].pattern);
 
 			LOG_INF("button: short press, LED pattern %u", pattern);
 
@@ -444,12 +253,12 @@ static void led_thread(void *p1, void *p2, void *p3)
 		bool led1_on = false;
 		bool led2_on = false;
 		bool led3_on = false;
-		uint32_t next1 = NO_TRANSITION;
-		uint32_t next2 = NO_TRANSITION;
-		uint32_t next3 = NO_TRANSITION;
+		uint32_t next1 = LED_PATTERN_NO_TRANSITION;
+		uint32_t next2 = LED_PATTERN_NO_TRANSITION;
+		uint32_t next3 = LED_PATTERN_NO_TRANSITION;
 
-		evaluate(&cfg[0], false, now, &led1_on, &next1);
-		evaluate(&cfg[1], true, now, &led2_on, &next2);
+		led_pattern_evaluate(&cfg[0], false, now, &led1_on, &next1);
+		led_pattern_evaluate(&cfg[1], true, now, &led2_on, &next2);
 
 		if ((error_flags & APP_ERROR_HEALTH) != 0U) {
 			uint32_t pos = now % LED_ERROR_FAST_PERIOD;
@@ -460,9 +269,9 @@ static void led_thread(void *p1, void *p2, void *p3)
 		} else if ((error_flags &
 			    (APP_ERROR_FAULT | APP_ERROR_WATCHDOG)) != 0U) {
 			led3_on = true;
-			next3 = NO_TRANSITION;
+			next3 = LED_PATTERN_NO_TRANSITION;
 		} else {
-			evaluate(&cfg[2], false, now, &led3_on, &next3);
+			led_pattern_evaluate(&cfg[2], false, now, &led3_on, &next3);
 		}
 
 		led_write(&led1, led1_on);
