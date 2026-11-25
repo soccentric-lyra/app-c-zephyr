@@ -1,0 +1,7 @@
+tests:
+  app.hwlink:
+    platform_allow:
+      - native_sim
+    tags:
+      - hwlink
+      - unit

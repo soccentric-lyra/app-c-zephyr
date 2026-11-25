@@ -22,8 +22,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         python3-venv python3-dev device-tree-compiler gperf ccache \
+        gcc libc6-dev gcc-multilib \
         wget xz-utils file libmagic1 \
     && rm -rf /var/lib/apt/lists/*
+
+# gcc/libc6-dev are the host toolchain for the native_sim board, which runs
+# the ztest suites as a host process (no board and no emulator).
 
 # Python tools in a venv (Ubuntu 24.04 blocks system-wide pip installs).
 ENV VIRTUAL_ENV=/opt/venv \
@@ -53,6 +57,11 @@ RUN cd /opt \
     && rm "zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz" \
     && "${ZEPHYR_SDK_INSTALL_DIR}/setup.sh" -t arm-zephyr-eabi -h -c \
     && chmod -R a+rX /opt/zephyrproject "${ZEPHYR_SDK_INSTALL_DIR}" /opt/venv
+
+# The image runs as the caller's uid, so HOME (and ccache below it) must be
+# writable by that user.  The base image creates /tmp/home, but later root
+# layers can create subdirectories such as .cache owned by root.
+RUN mkdir -p /tmp/home/.cache && chmod -R 1777 /tmp/home
 
 LABEL org.opencontainers.image.version="zephyr-${ZEPHYR_VERSION}-sdk-${ZEPHYR_SDK_VERSION}"
 
