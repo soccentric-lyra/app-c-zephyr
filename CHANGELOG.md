@@ -8,6 +8,25 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Kconfig options for the application log level and the IWDG timeout
+- `ztest` suite for the HWLINK framing layer on Zephyr's `native_sim` board
+- `make test` and `scripts/test-ztest.sh`
+- `docs/architecture.md`: thread model, devicetree overlay, flash map,
+  boot hand-over and a side-by-side comparison with the FreeRTOS version
+- GitHub Actions workflow for build, strict lint, footprint and tests
+
+### Changed
+
+- The Zephyr image now includes a 32-bit host toolchain so `native_sim`
+  tests run in the same container as the firmware build
+
+### Fixed
+
+- The README described `app-rust-freertos` as "Rust on Embassy"; it is Rust
+  on FreeRTOS
+
 ## [1.0.0] - 2026-11-19
 
 ### Added

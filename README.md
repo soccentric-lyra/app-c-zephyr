@@ -1,5 +1,7 @@
 # app-c-zephyr
 
+[![CI](https://github.com/soccentric-stm32/app-c-zephyr/actions/workflows/ci.yml/badge.svg)](https://github.com/soccentric-stm32/app-c-zephyr/actions/workflows/ci.yml)
+
 The NUCLEO-F767ZI demo application in C on Zephyr RTOS. It runs under the A/B bootloader from either slot and does exactly the same job as the C FreeRTOS demo: LED patterns, the user button, HWLINK communication with the desktop GUI, watchdog supervision and self-confirmation after a health check. Keeping the behaviour identical lets you compare C and Rust on FreeRTOS and Zephyr like for like. It is a freestanding Zephyr application built with plain CMake, so no west workspace is needed.
 
 ## Debug terminal
@@ -94,6 +96,7 @@ Headers are included with a module prefix, for example
 
 ## Documentation
 
+- [Architecture](docs/architecture.md): thread model, devicetree overlay, flash map, boot hand-over and a side-by-side comparison with the FreeRTOS version
 - [HWLINK protocol schema](protocol/README.md)
 - [Docker development environment](docker/README.md)
 
@@ -104,6 +107,7 @@ scripts/docker-dev.sh build   # build the stm32-dev-zephyr container image once
 scripts/build.sh              # build inside the container
 make lint                     # clang-tidy static analysis
 make lint-strict              # clang-tidy, failing on any finding
+make test                     # ztest HWLINK suite on native_sim
 make flash                    # upload build/zephyr-app.img through the bootloader
 make help                     # list all targets
 ```
@@ -121,7 +125,7 @@ bootloader GUI instead.
 
 - [bootloader](https://github.com/soccentric-stm32/bootloader) — A/B bootloader with UART update, CRC32 checks, trial boot and rollback
 - [app-c-freertos](https://github.com/soccentric-stm32/app-c-freertos) — Demo application in C on FreeRTOS
-- [app-rust-freertos](https://github.com/soccentric-stm32/app-rust-freertos) — Demo application in Rust on Embassy
+- [app-rust-freertos](https://github.com/soccentric-stm32/app-rust-freertos) — Demo application in Rust on FreeRTOS
 - [app-rust-zephyr](https://github.com/soccentric-stm32/app-rust-zephyr) — Demo application in Rust on Zephyr RTOS
 - [validation-firmware](https://github.com/soccentric-stm32/validation-firmware) — HWVAL hardware validation firmware
 - [validation-gui](https://github.com/soccentric-stm32/validation-gui) — HWVAL Studio: desktop GUI for tests, updates and flashing
