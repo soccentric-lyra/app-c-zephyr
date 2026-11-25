@@ -20,8 +20,10 @@
 
 #include "system/iwdg.h"
 
-/* IWDG timeout used by this firmware (BOOT sets the same 4 s window). */
-#define APP_WDT_TIMEOUT_MS 4000U
+/* IWDG timeout used by this firmware.  BOOT starts the IWDG with a 4 s
+ * window, so the application's first init must happen inside that window;
+ * afterwards this Kconfig value replaces it. */
+#define APP_WDT_TIMEOUT_MS CONFIG_ZDEMO_WATCHDOG_TIMEOUT_MS
 
 /** Watchdog device from the devicetree (alias watchdog0). */
 static const struct device *const wdt = DEVICE_DT_GET(DT_ALIAS(watchdog0));

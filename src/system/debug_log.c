@@ -27,7 +27,7 @@
 #include <zephyr/sys/printk.h>
 
 /* The one log module of the application; other files LOG_MODULE_DECLARE it. */
-LOG_MODULE_REGISTER(app, CONFIG_LOG_DEFAULT_LEVEL);
+LOG_MODULE_REGISTER(app, CONFIG_ZDEMO_LOG_LEVEL);
 
 #define DEBUG_LOG_TAG  "C-ZEP"
 #define LINE_MAX       160U

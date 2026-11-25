@@ -17,4 +17,24 @@ config ZDEMO_FAIL_HEALTH
 	  pending slot never confirms, LD3 fast-blinks, and the watchdog is
 	  stopped after 10 s so BOOT can count a failed trial and roll back.
 
+config ZDEMO_LOG_LEVEL
+	int "Application log level (0=off, 1=error, 2=warn, 3=info, 4=debug)"
+	range 0 4
+	default 3
+	help
+	  Severity filter for the application's own log module.  The Zephyr
+	  log backend still uses CONFIG_LOG_DEFAULT_LEVEL for kernel and driver
+	  messages; this option only controls lines logged by src/.
+
+config ZDEMO_WATCHDOG_TIMEOUT_MS
+	int "IWDG timeout installed by the application (ms)"
+	range 100 30000
+	default 4000
+	help
+	  Timeout installed by app_wdt_init().  BOOT starts the IWDG with a
+	  4 s window before hand-over, so the first application init must run
+	  inside that window; afterwards the application may install this
+	  value.  Keep it comfortably above the health thread's 100 ms feed
+	  period and below the 10 s failed-trial stop.
+
 source "Kconfig.zephyr"
