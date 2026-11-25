@@ -12,7 +12,7 @@ and this project adheres to
 
 - Kconfig options for the application log level and the IWDG timeout
 - `ztest` suites for the HWLINK framing layer and the LED pattern engine on
-  Zephyr's `native_sim` board
+  Zephyr's `native_sim` board, built with AddressSanitizer and UBSan
 - `make test` and `scripts/test-ztest.sh`
 - Pure `src/board/led_pattern.c` so the pattern maths is shared by the
   firmware and the `ztest` suite
